@@ -10,31 +10,31 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 TARGET = elf
 TEMPLATE = app
-
+CONFIG += c++11
 
 SOURCES += main.cpp\
         MainWindow.cpp \
-    IoThread.cpp
+    IoThread.cpp \
+    Database.cpp
 
 HEADERS  += MainWindow.h \
     IoThread.h \
     Packet.h \
     Type.h \
     DoubleNode.h \
-    List.h
+    List.h \
+    Database.h
 
 FORMS    += MainWindow.ui
 
 CONFIG(release, release|debug){
 INCLUDEPATH += $$PWD/include
-LIBS += $$PWD/lib/libuv.a
-#LIBS += $$PWD/lib/libsqlite3.a
+LIBS += -L$$PWD/lib -luv -lsqlite3 -ldl
 }
 
 CONFIG(debug, release|debug){
 INCLUDEPATH += $$PWD/include
-LIBS += $$PWD/debug/libuv.a
-#LIBS += $$PWD/debug/libsqlite3.a
+LIBS += -L$$PWD/debug -luv -lsqlite3 -ldl
 }
 
 DISTFILES += \
