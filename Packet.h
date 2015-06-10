@@ -5,7 +5,10 @@
 //Author: elf
 //EMail: elf198012@gmail.com
 
+#define ELF_PROTOCOL_VERSION 0
+
 typedef enum{
+    ptHello,
     ptMessage,
     ptIndexedMessage
 }PacketType;
@@ -17,6 +20,13 @@ typedef enum{
 typedef struct{
     PACKET_HEADER;
 }Packet;
+
+typedef struct{
+    PACKET_HEADER;
+    U16 protocolVersion;
+    U16 indexVersion;//0: no index database. other: read version from file.
+    U32 bEncrypted: 1;//0: not encrypted. 1: encrypted.
+}Packet_Hello;
 
 typedef struct{
     PACKET_HEADER;
