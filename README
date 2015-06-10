@@ -1,2 +1,8 @@
-A chat software. It published into "Public Domain".
-It based Qt and libuv.
+A chat software. It is published into "Public Domain".
+It based Qt(5.4.2) and libuv(1.6.1).
+
+You must build or copy external libs youself!
+libuv: http://libuv.org/dist/
+Copy libuv.a to ./lib
+Copy include files of libuv to ./include
+
