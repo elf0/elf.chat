@@ -16,12 +16,12 @@ static void IoThread_onSent(uv_udp_send_t* req, int status);
 IoThread::IoThread(QObject *pParent)
     : QObject(pParent)
 {
-    List_Initialize(&_events);
-    List_Initialize(&_pendingEvents);
+    List_Initialize(&_requests);
+    List_Initialize(&_pendingRequests);
 
     uv_mutex_init(&_mutex);
-    uv_async_init(uv_default_loop(), &_event, onEvent);
-    _event.data = this;
+    uv_async_init(uv_default_loop(), &_requestNofity, onRequest);
+    _requestNofity.data = this;
 
     uv_udp_init(uv_default_loop(), &_udp);
     _udp.data = this;
@@ -31,10 +31,10 @@ IoThread::~IoThread()
 {
 }
 
-void IoThread::onEvent(uv_async_t* handle){
+void IoThread::onRequest(uv_async_t* handle){
     Qt::HANDLE h = QThread::currentThreadId();
     IoThread *pThread = (IoThread*)handle->data;
-    pThread->ProcessEvents();
+    pThread->ProcessRequests();
 }
 
 void IoThread::SetLocal(U16 nPort)
@@ -56,41 +56,41 @@ Bool IoThread::PostUdp(Byte *pData, U16 nBytes){
         return false;
     }
 
-    Event *pEvent = (Event*)malloc(sizeof(Event) + sizeof(uv_udp_send_t));
-    pEvent->type = etPostUdp;
-    pEvent->pData = pData;
-    pEvent->nBytes = nBytes;
+    IoRequest *pRequest = (IoRequest*)malloc(sizeof(IoRequest) + sizeof(uv_udp_send_t));
+    pRequest->type = etPostUdp;
+    pRequest->pData = pData;
+    pRequest->nBytes = nBytes;
 
-    return Post(pEvent);
+    return Post(pRequest);
 }
 
-Bool IoThread::Post(Event *pEvent){
+Bool IoThread::Post(IoRequest *pRequest){
     uv_mutex_lock(&_mutex);
-    List_Push(&_pendingEvents, (DoubleNode*)pEvent);
+    List_Push(&_pendingRequests, (DoubleNode*)pRequest);
     uv_mutex_unlock(&_mutex);
-    return uv_async_send(&_event) == 0;
+    return uv_async_send(&_requestNofity) == 0;
 }
 
-void IoThread::ProcessEvents(){
+void IoThread::ProcessRequests(){
     uv_mutex_lock(&_mutex);
-    List_MoveTo(&_pendingEvents, &_events);
+    List_MoveTo(&_pendingRequests, &_requests);
     uv_mutex_unlock(&_mutex);
 
-    List *pEvents = &_events;
-    while(List_NotEmpty(pEvents)){
-        Event *pEvent = (Event*)List_Pop(pEvents);
-        ProcessEvent(pEvent);
+    List *pRequests = &_requests;
+    while(List_NotEmpty(pRequests)){
+        IoRequest *pRequest = (IoRequest*)List_Pop(pRequests);
+        ProcessRequest(pRequest);
     }
 }
 
-void IoThread::ProcessEvent(Event *pEvent){
-    switch(pEvent->type){
+void IoThread::ProcessRequest(IoRequest *pRequest){
+    switch(pRequest->type){
     case etPostUdp:{
-        uv_udp_send_t *pRequest = (uv_udp_send_t*)(pEvent + 1);
-        uv_buf_t buf = uv_buf_init((char*)pEvent->pData, pEvent->nBytes);
-        if(uv_udp_send(pRequest, &_udp, &buf, 1, (const struct sockaddr*)&_siRemote, IoThread_onSent) != 0){
-            free(pEvent->pData);
-            free(pEvent);
+        uv_udp_send_t *puvRequest = (uv_udp_send_t*)(pRequest + 1);
+        uv_buf_t buf = uv_buf_init((char*)pRequest->pData, pRequest->nBytes);
+        if(uv_udp_send(puvRequest, &_udp, &buf, 1, (const struct sockaddr*)&_siRemote, IoThread_onSent) != 0){
+            free(pRequest->pData);
+            free(pRequest);
         }
     }break;
     }
@@ -138,9 +138,9 @@ static void IoThread_onSent(uv_udp_send_t* req, int status){
         printf("Client_onSent\n");
     }
 
-    Event *pEvent = (Event*)req - 1;
-    free(pEvent->pData);
-    free(pEvent);
+    IoRequest *pRequest = (IoRequest*)req - 1;
+    free(pRequest->pData);
+    free(pRequest);
 }
 
 static void ThreadFuntion(void* arg){

@@ -14,14 +14,14 @@
 
 typedef enum{
     etPostUdp
-}EventType;
+}IoRequestType;
 
 typedef struct{
     DoubleNode node;
-    EventType type;
+    IoRequestType type;
     Byte *pData;
     U32 nBytes;
-}Event;
+}IoRequest;
 
 class IoThread : public QObject
 {
@@ -38,15 +38,15 @@ public:
 signals:
     void receivedUdp(unsigned char *pData, unsigned short nBytes);
 private:
-    Bool Post(Event *pEvent);
-    inline void ProcessEvents();
-    inline void ProcessEvent(Event *pEvent);
-    static void onEvent(uv_async_t* handle);
-    List _events;
-    List _pendingEvents;
+    Bool Post(IoRequest *pRequest);
+    inline void ProcessRequests();
+    inline void ProcessRequest(IoRequest *pRequest);
+    static void onRequest(uv_async_t* handle);
+    List _requests;
+    List _pendingRequests;
     uv_thread_t _thread;
     uv_mutex_t _mutex;
-    uv_async_t _event;
+    uv_async_t _requestNofity;
     uv_udp_t _udp;
 //    uv_udp_send_t _udpSendRequest;
     struct sockaddr_in _siRemote;
