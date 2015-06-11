@@ -26,6 +26,7 @@ typedef struct{
     U16 protocolVersion;
     U16 indexVersion;//0: no index database. other: read version from file.
     U32 bEncrypted: 1;//0: not encrypted. 1: encrypted.
+    U64 nNodeId;//Remember me.
 }Packet_Hello;
 
 typedef struct{

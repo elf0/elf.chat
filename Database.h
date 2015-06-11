@@ -10,8 +10,7 @@
 #include "Type.h"
 #include "sqlite3.h"
 
-class Database
-{
+class Database{
 public:
     Database();
     ~Database();

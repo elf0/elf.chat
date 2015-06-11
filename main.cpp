@@ -2,10 +2,11 @@
 //Author: elf
 //EMail: elf198012@gmail.com
 
-#include "MainWindow.h"
 #include <QApplication>
-#include "IoThread.h"
 #include <QThread>
+#include "MainWindow.h"
+#include "Database.h"
+#include "IoThread.h"
 
 int main(int argc, char *argv[])
 {
@@ -13,12 +14,17 @@ int main(int argc, char *argv[])
         return 1;
 
     Qt::HANDLE h = QThread::currentThreadId();
-
     QApplication a(argc, argv);
+
+    Database database;
+    QString strPath = QApplication::applicationDirPath();
+    if(!database.Open(strPath.toStdString() + "/system.db"))
+        return 2;
+
     IoThread iotThread;
     iotThread.SetLocal(atoi(argv[1]));
 
-    MainWindow window(&iotThread);
+    MainWindow window(&database, &iotThread);
     window.show();
 
     iotThread.SetRemote("127.0.0.1", atoi(argv[2]));

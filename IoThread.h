@@ -9,15 +9,18 @@
 #include <QObject>
 #include "Type.h"
 #include "List.h"
-#include "Packet.h"
+
+#define MAX_UDP_DATA_SIZE 65507
 
 typedef enum{
-    etPostMessage, etPostIndexedMessage
+    etPostUdp
 }EventType;
 
 typedef struct{
     DoubleNode node;
     EventType type;
+    Byte *pData;
+    U32 nBytes;
 }Event;
 
 class IoThread : public QObject
@@ -28,18 +31,17 @@ public:
     ~IoThread();
     void SetLocal(U16 nPort);
     void SetRemote(const QString &strIp, U16 nPort);
-    static inline Bool onPacket(IoThread *pThread, Packet *pPacket);
-    Bool PostMessage(const Char *pMessage, U16 nSize);
+    Bool PostUdp(Byte *pData, U16 nBytes);
+
     Bool Run();
 
 signals:
-    void message(const QString &strMessage);
+    void receivedUdp(unsigned char *pData, unsigned short nBytes);
 private:
     Bool Post(Event *pEvent);
     inline void ProcessEvents();
     inline void ProcessEvent(Event *pEvent);
     static void onEvent(uv_async_t* handle);
-    //inline Bool PostIndexedMessage(struct sockaddr_in *pAddress, U16 nIndex);
     List _events;
     uv_thread_t _thread;
     uv_mutex_t _mutex;
