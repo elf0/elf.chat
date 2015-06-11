@@ -17,6 +17,8 @@ IoThread::IoThread(QObject *pParent)
     : QObject(pParent)
 {
     List_Initialize(&_events);
+    List_Initialize(&_pendingEvents);
+
     uv_mutex_init(&_mutex);
     uv_async_init(uv_default_loop(), &_event, onEvent);
     _event.data = this;
@@ -64,19 +66,21 @@ Bool IoThread::PostUdp(Byte *pData, U16 nBytes){
 
 Bool IoThread::Post(Event *pEvent){
     uv_mutex_lock(&_mutex);
-    List_Push(&_events, (DoubleNode*)pEvent);
+    List_Push(&_pendingEvents, (DoubleNode*)pEvent);
     uv_mutex_unlock(&_mutex);
     return uv_async_send(&_event) == 0;
 }
 
 void IoThread::ProcessEvents(){
-    List *pEvents = &_events;
     uv_mutex_lock(&_mutex);
+    List_MoveTo(&_pendingEvents, &_events);
+    uv_mutex_unlock(&_mutex);
+
+    List *pEvents = &_events;
     while(List_NotEmpty(pEvents)){
         Event *pEvent = (Event*)List_Pop(pEvents);
         ProcessEvent(pEvent);
     }
-    uv_mutex_unlock(&_mutex);
 }
 
 void IoThread::ProcessEvent(Event *pEvent){
@@ -84,7 +88,10 @@ void IoThread::ProcessEvent(Event *pEvent){
     case etPostUdp:{
         uv_udp_send_t *pRequest = (uv_udp_send_t*)(pEvent + 1);
         uv_buf_t buf = uv_buf_init((char*)pEvent->pData, pEvent->nBytes);
-        int nResult = uv_udp_send(pRequest, &_udp, &buf, 1, (const struct sockaddr*)&_siRemote, IoThread_onSent);
+        if(uv_udp_send(pRequest, &_udp, &buf, 1, (const struct sockaddr*)&_siRemote, IoThread_onSent) != 0){
+            free(pEvent->pData);
+            free(pEvent);
+        }
     }break;
     }
 }
@@ -125,6 +132,7 @@ static void Udp_onReceived(uv_udp_t* handle,
 }
 
 static void IoThread_onSent(uv_udp_send_t* req, int status){
+    Qt::HANDLE h = QThread::currentThreadId();
     int r;
     if(status != 0){
         printf("Client_onSent\n");

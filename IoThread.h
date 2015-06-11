@@ -43,6 +43,7 @@ private:
     inline void ProcessEvent(Event *pEvent);
     static void onEvent(uv_async_t* handle);
     List _events;
+    List _pendingEvents;
     uv_thread_t _thread;
     uv_mutex_t _mutex;
     uv_async_t _event;
