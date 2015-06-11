@@ -20,8 +20,8 @@ IoThread::IoThread(QObject *pParent)
     List_Initialize(&_pendingRequests);
 
     uv_mutex_init(&_mutex);
-    uv_async_init(uv_default_loop(), &_requestNofity, onRequest);
-    _requestNofity.data = this;
+    uv_async_init(uv_default_loop(), &_uvaRequestNofity, onRequest);
+    _uvaRequestNofity.data = this;
 
     uv_udp_init(uv_default_loop(), &_udp);
     _udp.data = this;
@@ -68,7 +68,7 @@ Bool IoThread::Post(IoRequest *pRequest){
     uv_mutex_lock(&_mutex);
     List_Push(&_pendingRequests, (DoubleNode*)pRequest);
     uv_mutex_unlock(&_mutex);
-    return uv_async_send(&_requestNofity) == 0;
+    return uv_async_send(&_uvaRequestNofity) == 0;
 }
 
 void IoThread::ProcessRequests(){

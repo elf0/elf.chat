@@ -46,7 +46,7 @@ private:
     List _pendingRequests;
     uv_thread_t _thread;
     uv_mutex_t _mutex;
-    uv_async_t _requestNofity;
+    uv_async_t _uvaRequestNofity;
     uv_udp_t _udp;
 //    uv_udp_send_t _udpSendRequest;
     struct sockaddr_in _siRemote;
