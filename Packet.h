@@ -8,6 +8,7 @@
 #define ELF_PROTOCOL_VERSION 0
 
 typedef enum{
+    ptProxy,
     ptHello,
     ptMessage,
     ptIndexedMessage
@@ -20,6 +21,14 @@ typedef enum{
 typedef struct{
     PACKET_HEADER;
 }Packet;
+
+typedef struct{
+    PACKET_HEADER;
+    U32 nIp;
+    U16 nPort;
+    U8 nProxies;
+    U8 szAlign[5];
+}Packet_Proxy;
 
 typedef struct{
     PACKET_HEADER;
